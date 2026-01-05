@@ -2,10 +2,7 @@ import streamlit as st
 import pandas as pd
 import random
 import plotly.express as px
-import streamlit.components.v1 as components
 from st_aggrid import AgGrid
-from streamlit_lottie import st_lottie
-import requests
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="Cyber Awareness Simulator", layout="wide")
@@ -80,21 +77,12 @@ cyber_tips = [
     {"tip": "Backup your data securely."}
 ]
 
-# ---------- LOTTIE ANIMATION ----------
-def load_lottieurl(url):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
-
-lottie_robot = load_lottieurl("https://assets2.lottiefiles.com/packages/lf20_0yfsb3a1.json")  # Robot animation
-
 # ---------- MAIN PAGE ----------
 if st.session_state.page == "home":
     st.markdown('<div class="main-title">Cyber Awareness Simulator</div>', unsafe_allow_html=True)
     
-    # Animation
-    st_lottie(lottie_robot, height=300)
+    # Robot GIF animation (replace URL with any GIF you like)
+    st.image("https://media.giphy.com/media/3oKIPwoeGErMmaI43C/giphy.gif", width=300)
     
     # Navigation buttons
     col1, col2, col3, col4 = st.columns(4)
@@ -109,6 +97,7 @@ if st.session_state.page == "home":
 elif st.session_state.page == "quiz":
     st.title("📝 Cyber Awareness Quiz")
     if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
+    
     if st.session_state.quiz_index < len(quiz_questions):
         q = quiz_questions[st.session_state.quiz_index]
         st.markdown(f"<div class='card'><h3>{q['question']}</h3></div>", unsafe_allow_html=True)
