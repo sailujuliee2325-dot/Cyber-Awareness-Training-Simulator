@@ -45,3 +45,48 @@ if q3 == "OTP / Bank details":
 if st.button("Submit Quiz"):
     st.success(f"Your Score: {score} / 3")
 
+    if score == 3:
+        st.balloons()
+        st.write("🎉 Excellent! You are cyber aware.")
+    elif score == 2:
+        st.write("👍 Good job! Stay alert online.")
+    else:
+        st.write("⚠️ You need to improve your cyber awareness.")
+
+st.divider()
+
+# -----------------------------
+# PHISHING EMAIL DEMO
+# -----------------------------
+st.header("📧 Phishing Email Simulation")
+
+st.markdown("""
+**From:** security-alert@paypaI.com  
+**Subject:** Urgent: Verify your account immediately  
+
+Dear User,
+
+We noticed suspicious activity in your account.
+Please verify your account immediately by clicking the link below,
+otherwise your account will be suspended.
+
+👉 http://paypal-verification-secure-login.com
+
+Thank you,  
+PayPal Security Team
+""")
+
+answer = st.radio(
+    "Is this email safe or a phishing attempt?",
+    ["Safe Email", "Phishing Email"],
+    key="phish1"
+)
+
+if answer == "Phishing Email":
+    st.success("Correct! 🚨 This is a phishing email.")
+    st.write("**Red Flags:**")
+    st.write("- Fake sender email (paypaI.com uses capital 'I')")
+    st.write("- Urgent threatening message")
+    st.write("- Suspicious link URL")
+else:
+    st.error("This is incorrect. This email shows multiple phishing signs.")
