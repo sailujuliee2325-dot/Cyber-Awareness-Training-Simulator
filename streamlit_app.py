@@ -35,16 +35,20 @@ body {
     border-radius: 10px;
     padding: 0.5em 1.2em;
     margin: 5px 0;
-}
-.stButton>button:hover {
-    opacity: 0.85;
+    width: 100%;
+    font-weight: bold;
 }
 .card {
     background: white;
     border-radius: 12px;
     box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
-    padding: 15px;
-    margin: 10px 0;
+    padding: 25px;
+    margin: 20px auto;
+    max-width: 700px;
+    text-align: center;
+}
+h3, h4, p {
+    text-align: center;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -86,6 +90,7 @@ if page == "Quiz":
                 if opt == q["answer"]:
                     st.session_state.quiz_score += 1
                     st.success("✅ Correct!")
+                    # Confetti effect
                     components.html("""<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
                     <script>confetti({ particleCount: 100, spread: 70 });</script>""")
                 else:
@@ -105,8 +110,8 @@ if page == "Quiz":
 elif page == "Phishing Simulator":
     st.title("🎣 Phishing Simulator")
     example = random.choice(phishing_examples)
-    st.markdown(f"<div class='card'><b>Type:</b> {example['type']}<br><b>Content:</b> {example['content']}</div>", unsafe_allow_html=True)
-    action = st.radio("What would you do?", ["Ignore and report", "Click/Submit info", "Forward to friend"])
+    st.markdown(f"<div class='card'><b>Type:</b> {example['type']}<br><b>Content:</b><br>{example['content']}</div>", unsafe_allow_html=True)
+    action = st.radio("What would you do?", ["Ignore and report", "Click/Submit info", "Forward to friend"], index=0)
     if st.button("Submit Action"):
         correct = action == example["correct_action"]
         if correct:
