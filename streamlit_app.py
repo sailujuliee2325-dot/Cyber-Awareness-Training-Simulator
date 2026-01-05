@@ -1,130 +1,148 @@
 import streamlit as st
+import pandas as pd
+import random
+import plotly.express as px
+import streamlit.components.v1 as components
+from st_aggrid import AgGrid
 
-# -----------------------------
-# Page config
-# -----------------------------
+# ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="Cyber Awareness Training Simulator",
-    page_icon="🛡️",
-    layout="centered"
+    page_title="Cyber Awareness Simulator",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# -----------------------------
-# Title and Intro
-# -----------------------------
-st.title("Cyber Awareness Training Simulator")
-st.write(
-    "Learn to identify cyber threats and improve your online safety. "
-    "This simulator includes a short quiz and a phishing email simulation."
-)
-st.divider()
+# ---------- SESSION STATE ----------
+if 'quiz_score' not in st.session_state:
+    st.session_state.quiz_score = 0
+if 'quiz_index' not in st.session_state:
+    st.session_state.quiz_index = 0
+if 'phishing_attempts' not in st.session_state:
+    st.session_state.phishing_attempts = []
+if 'phishing_score' not in st.session_state:
+    st.session_state.phishing_score = 0
 
-# -----------------------------
-# QUIZ SECTION
-# -----------------------------
-st.header("Cyber Awareness Quiz")
+# ---------- STYLES ----------
+st.markdown("""
+<style>
+body {
+    background: #f5f7fa;
+    color: #333;
+}
+.stButton>button {
+    background: linear-gradient(90deg, #1cb5e0, #000851);
+    color: white;
+    border-radius: 10px;
+    padding: 0.5em 1.2em;
+    margin: 5px 0;
+}
+.stButton>button:hover {
+    opacity: 0.85;
+}
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+    padding: 15px;
+    margin: 10px 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Initialize score
-if "score" not in st.session_state:
-    st.session_state.score = 0
-
-# Questions dictionary
+# ---------- DATA ----------
 quiz_questions = [
-    {
-        "question": "1. What should you do if you receive a suspicious email?",
-        "options": ["Click the link", "Ignore and delete it", "Reply with details"],
-        "answer": "Ignore and delete it"
-    },
-    {
-        "question": "2. Which password is the strongest?",
-        "options": ["123456", "password", "P@ssw0rd!2024"],
-        "answer": "P@ssw0rd!2024"
-    },
-    {
-        "question": "3. What information should you never share online?",
-        "options": ["Your favorite color", "OTP / Bank details", "Your nickname"],
-        "answer": "OTP / Bank details"
-    }
+    {"question": "What is phishing?", "options": ["A type of malware", "Tricking users to get sensitive info", "A network protocol", "A password manager"], "answer": "Tricking users to get sensitive info"},
+    {"question": "Which of these is a strong password?", "options": ["12345678", "password123", "T!g3r$2026", "qwerty"], "answer": "T!g3r$2026"},
+    {"question": "What should you check in an email before clicking links?", "options": ["Sender address", "Grammatical errors", "Suspicious attachments", "All of the above"], "answer": "All of the above"}
 ]
 
-# Loop through questions
-for idx, q in enumerate(quiz_questions):
-    st.subheader(q["question"])
-    choice = st.radio("", q["options"], key=f"q{idx+1}")
-    # Show immediate feedback if user chooses the correct answer
-    if choice == q["answer"]:
-        st.success("Correct!")
-    elif choice != "":
-        st.error("Incorrect.")
+phishing_examples = [
+    {"type": "Email", "content": "Your account will be suspended! Click here to verify.", "correct_action": "Report as phishing", "explanation": "Legitimate companies never ask for verification like this in email."},
+    {"type": "Website", "content": "http://secure-paypal.com-login.xyz", "correct_action": "Do not enter credentials", "explanation": "The domain is fake; always check URL carefully."},
+    {"type": "Message", "content": "Congrats! You won a prize. Send your card details to claim.", "correct_action": "Ignore and report", "explanation": "This is a classic phishing scam trying to steal personal info."}
+]
 
-# Submit quiz button
-if st.button("Submit Quiz"):
-    # Calculate score
-    st.session_state.score = sum(
-        1 for idx, q in enumerate(quiz_questions)
-        if st.session_state.get(f"q{idx+1}") == q["answer"]
-    )
-    st.info(f"Your Total Score: {st.session_state.score} / {len(quiz_questions)}")
+cyber_tips = [
+    {"tip": "Use strong, unique passwords for every account."},
+    {"tip": "Enable multi-factor authentication (MFA)."},
+    {"tip": "Do not click links from unknown sources."},
+    {"tip": "Regularly update your software and devices."},
+    {"tip": "Backup your data securely."}
+]
 
-    # Personalized feedback
-    if st.session_state.score == len(quiz_questions):
-        st.success("Excellent! You have strong cyber awareness.")
-    elif st.session_state.score == len(quiz_questions) - 1:
-        st.warning("Good job! A little more attention will make you safer.")
+# ---------- SIDEBAR ----------
+st.sidebar.title("Cyber Awareness Simulator")
+page = st.sidebar.radio("Navigation", ["Quiz", "Phishing Simulator", "Cyber Tips", "Dashboard"])
+
+# ---------- QUIZ PAGE ----------
+if page == "Quiz":
+    st.title("📝 Cyber Awareness Quiz")
+    if st.session_state.quiz_index < len(quiz_questions):
+        q = quiz_questions[st.session_state.quiz_index]
+        st.markdown(f"<div class='card'><h3>{q['question']}</h3></div>", unsafe_allow_html=True)
+        cols = st.columns(2)
+        for i, opt in enumerate(q["options"]):
+            if cols[i%2].button(opt, key=f"q{st.session_state.quiz_index}_{i}"):
+                if opt == q["answer"]:
+                    st.session_state.quiz_score += 1
+                    st.success("✅ Correct!")
+                    components.html("""<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+                    <script>confetti({ particleCount: 100, spread: 70 });</script>""")
+                else:
+                    st.error(f"❌ Incorrect! Correct: {q['answer']}")
+                st.session_state.quiz_index += 1
+                st.experimental_rerun()
+        st.progress((st.session_state.quiz_index)/len(quiz_questions))
     else:
-        st.error("You need to improve your cyber awareness. Review the tips below.")
+        st.balloons()
+        st.success(f"Quiz Completed! Score: {st.session_state.quiz_score}/{len(quiz_questions)}")
+        if st.button("Restart Quiz"):
+            st.session_state.quiz_index = 0
+            st.session_state.quiz_score = 0
+            st.experimental_rerun()
 
-st.divider()
+# ---------- PHISHING SIMULATOR ----------
+elif page == "Phishing Simulator":
+    st.title("🎣 Phishing Simulator")
+    example = random.choice(phishing_examples)
+    st.markdown(f"<div class='card'><b>Type:</b> {example['type']}<br><b>Content:</b> {example['content']}</div>", unsafe_allow_html=True)
+    action = st.radio("What would you do?", ["Ignore and report", "Click/Submit info", "Forward to friend"])
+    if st.button("Submit Action"):
+        correct = action == example["correct_action"]
+        if correct:
+            st.session_state.phishing_score += 1
+            st.success("✅ Correct! You recognized the phishing attempt.")
+        else:
+            st.error(f"❌ Incorrect! {example['explanation']}")
+        st.session_state.phishing_attempts.append({"content": example["content"], "action": action, "correct": correct})
+        st.experimental_rerun()
 
-# -----------------------------
-# PHISHING EMAIL SIMULATION
-# -----------------------------
-st.header("Phishing Email Simulation")
+# ---------- CYBER TIPS ----------
+elif page == "Cyber Tips":
+    st.title("💡 Cybersecurity Tips")
+    for tip in cyber_tips:
+        st.markdown(f"<div class='card'>{tip['tip']}</div>", unsafe_allow_html=True)
 
-st.markdown("""
-**From:** security-alert@paypaI.com  
-**Subject:** Urgent: Verify your account immediately  
-
-Dear User,
-
-We noticed unusual activity in your account.
-Please verify your account immediately by clicking the link below,
-otherwise your account will be suspended.
-
-[Click here to verify](http://paypal-verification-secure-login.com)
-
-Thank you,  
-PayPal Security Team
-""")
-
-phish_choice = st.radio(
-    "Is this email safe or a phishing attempt?",
-    ["Safe Email", "Phishing Email"],
-    key="phish_sim"
-)
-
-if phish_choice == "Phishing Email":
-    st.success("Correct! This is a phishing email.")
-    st.markdown("""
-**Red Flags to notice:**
-- Fake sender email (paypaI.com uses capital 'I')  
-- Urgent threatening language  
-- Suspicious link that doesn't match official domain  
-- Generic greeting instead of your real name
-""")
-else:
-    st.error("Incorrect. This email contains several phishing indicators.")
-
-st.divider()
-
-# -----------------------------
-# CYBER TIPS SECTION
-# -----------------------------
-st.header("Quick Cyber Safety Tips")
-st.markdown("""
-- Use strong, unique passwords for all accounts.  
-- Never click links from unknown senders.  
-- Enable two-factor authentication (2FA) whenever possible.  
-- Regularly update your software and devices.  
-- Verify websites before entering personal or financial information.
-""")
+# ---------- DASHBOARD ----------
+elif page == "Dashboard":
+    st.title("📊 Performance Dashboard")
+    st.metric("Quiz Score", f"{st.session_state.quiz_score}/{len(quiz_questions)}")
+    st.metric("Phishing Score", f"{st.session_state.phishing_score}/{len(st.session_state.phishing_attempts)}")
+    
+    # Quiz Pie Chart
+    quiz_df = pd.DataFrame([
+        {"Status": "Correct", "Count": st.session_state.quiz_score},
+        {"Status": "Incorrect", "Count": len(quiz_questions)-st.session_state.quiz_score}
+    ])
+    fig1 = px.pie(quiz_df, names='Status', values='Count', color='Status',
+                  color_discrete_map={'Correct':'green','Incorrect':'red'},
+                  title="Quiz Results")
+    st.plotly_chart(fig1, use_container_width=True)
+    
+    # Phishing Attempts Table
+    if st.session_state.phishing_attempts:
+        phishing_df = pd.DataFrame(st.session_state.phishing_attempts)
+        st.subheader("Phishing Attempts")
+        AgGrid(phishing_df, height=200, fit_columns_on_grid_load=True)
+    else:
+        st.info("No phishing attempts recorded yet.")
