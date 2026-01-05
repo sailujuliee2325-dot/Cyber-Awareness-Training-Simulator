@@ -4,15 +4,15 @@ import random
 import plotly.express as px
 import streamlit.components.v1 as components
 from st_aggrid import AgGrid
+from streamlit_lottie import st_lottie
+import requests
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(
-    page_title="Cyber Awareness Simulator",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Cyber Awareness Simulator", layout="wide")
 
 # ---------- SESSION STATE ----------
+if 'page' not in st.session_state:
+    st.session_state.page = "home"
 if 'quiz_score' not in st.session_state:
     st.session_state.quiz_score = 0
 if 'quiz_index' not in st.session_state:
@@ -28,26 +28,32 @@ st.markdown("""
 body {
     background: #f5f7fa;
     color: #333;
+    text-align: center;
 }
-.stButton>button {
-    background: linear-gradient(90deg, #1cb5e0, #000851);
-    color: white;
-    border-radius: 10px;
-    padding: 0.5em 1.2em;
-    margin: 5px 0;
-    width: 100%;
+.main-title {
+    font-size: 3rem;
     font-weight: bold;
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+.nav-button button {
+    width: 220px;
+    height: 60px;
+    margin: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+    border-radius: 15px;
+    border: none;
+    background: linear-gradient(90deg, #1cb5e0, #000851);
 }
 .card {
     background: white;
     border-radius: 12px;
     box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
-    padding: 25px;
+    padding: 20px;
     margin: 20px auto;
     max-width: 700px;
-    text-align: center;
-}
-h3, h4, p {
     text-align: center;
 }
 </style>
@@ -74,13 +80,35 @@ cyber_tips = [
     {"tip": "Backup your data securely."}
 ]
 
-# ---------- SIDEBAR ----------
-st.sidebar.title("Cyber Awareness Simulator")
-page = st.sidebar.radio("Navigation", ["Quiz", "Phishing Simulator", "Cyber Tips", "Dashboard"])
+# ---------- LOTTIE ANIMATION ----------
+def load_lottieurl(url):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+lottie_robot = load_lottieurl("https://assets2.lottiefiles.com/packages/lf20_0yfsb3a1.json")  # Robot animation
+
+# ---------- MAIN PAGE ----------
+if st.session_state.page == "home":
+    st.markdown('<div class="main-title">Cyber Awareness Simulator</div>', unsafe_allow_html=True)
+    
+    # Animation
+    st_lottie(lottie_robot, height=300)
+    
+    # Navigation buttons
+    col1, col2, col3, col4 = st.columns(4)
+    if col1.button("Quiz"): st.session_state.page = "quiz"
+    if col2.button("Phishing Simulator"): st.session_state.page = "phishing"
+    if col3.button("Cyber Tips"): st.session_state.page = "tips"
+    if col4.button("Dashboard"): st.session_state.page = "dashboard"
+    
+    st.experimental_rerun()
 
 # ---------- QUIZ PAGE ----------
-if page == "Quiz":
+elif st.session_state.page == "quiz":
     st.title("📝 Cyber Awareness Quiz")
+    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
     if st.session_state.quiz_index < len(quiz_questions):
         q = quiz_questions[st.session_state.quiz_index]
         st.markdown(f"<div class='card'><h3>{q['question']}</h3></div>", unsafe_allow_html=True)
@@ -90,7 +118,6 @@ if page == "Quiz":
                 if opt == q["answer"]:
                     st.session_state.quiz_score += 1
                     st.success("✅ Correct!")
-                    # Confetti effect
                     components.html("""<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
                     <script>confetti({ particleCount: 100, spread: 70 });</script>""")
                 else:
@@ -107,8 +134,9 @@ if page == "Quiz":
             st.experimental_rerun()
 
 # ---------- PHISHING SIMULATOR ----------
-elif page == "Phishing Simulator":
+elif st.session_state.page == "phishing":
     st.title("🎣 Phishing Simulator")
+    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
     example = random.choice(phishing_examples)
     st.markdown(f"<div class='card'><b>Type:</b> {example['type']}<br><b>Content:</b><br>{example['content']}</div>", unsafe_allow_html=True)
     action = st.radio("What would you do?", ["Ignore and report", "Click/Submit info", "Forward to friend"], index=0)
@@ -123,18 +151,19 @@ elif page == "Phishing Simulator":
         st.experimental_rerun()
 
 # ---------- CYBER TIPS ----------
-elif page == "Cyber Tips":
+elif st.session_state.page == "tips":
     st.title("💡 Cybersecurity Tips")
+    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
     for tip in cyber_tips:
         st.markdown(f"<div class='card'>{tip['tip']}</div>", unsafe_allow_html=True)
 
 # ---------- DASHBOARD ----------
-elif page == "Dashboard":
+elif st.session_state.page == "dashboard":
     st.title("📊 Performance Dashboard")
+    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
     st.metric("Quiz Score", f"{st.session_state.quiz_score}/{len(quiz_questions)}")
     st.metric("Phishing Score", f"{st.session_state.phishing_score}/{len(st.session_state.phishing_attempts)}")
     
-    # Quiz Pie Chart
     quiz_df = pd.DataFrame([
         {"Status": "Correct", "Count": st.session_state.quiz_score},
         {"Status": "Incorrect", "Count": len(quiz_questions)-st.session_state.quiz_score}
@@ -144,7 +173,6 @@ elif page == "Dashboard":
                   title="Quiz Results")
     st.plotly_chart(fig1, use_container_width=True)
     
-    # Phishing Attempts Table
     if st.session_state.phishing_attempts:
         phishing_df = pd.DataFrame(st.session_state.phishing_attempts)
         st.subheader("Phishing Attempts")
