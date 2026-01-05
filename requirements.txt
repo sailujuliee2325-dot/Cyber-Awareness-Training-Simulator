@@ -2,4 +2,3 @@ streamlit
 streamlit-aggrid
 plotly
 pandas
-streamlit-elements
