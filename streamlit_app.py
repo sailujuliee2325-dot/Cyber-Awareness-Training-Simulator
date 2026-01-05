@@ -1,30 +1,43 @@
 import streamlit as st
 
+# -----------------------------
+# Title
+# -----------------------------
 st.title("Cyber Awareness Training Simulator 🛡️")
-st.write("Test your cyber security knowledge with this short quiz.")
+st.write("Test your cyber security knowledge and learn about phishing attacks.")
 
+# -----------------------------
+# QUIZ SECTION
+# -----------------------------
 score = 0
 
-st.subheader("Question 1")
+st.subheader("Quiz: Test Your Knowledge")
+
+st.write("Answer the following questions:")
+
+st.markdown("**Question 1:** What should you do if you receive a suspicious email?")
 q1 = st.radio(
-    "What should you do if you receive a suspicious email?",
-    ["Click the link", "Ignore and delete it", "Reply with details"]
+    "",
+    ["Click the link", "Ignore and delete it", "Reply with details"],
+    key="q1"
 )
 if q1 == "Ignore and delete it":
     score += 1
 
-st.subheader("Question 2")
+st.markdown("**Question 2:** Which password is the strongest?")
 q2 = st.radio(
-    "Which password is the strongest?",
-    ["123456", "password", "P@ssw0rd!2024"]
+    "",
+    ["123456", "password", "P@ssw0rd!2024"],
+    key="q2"
 )
 if q2 == "P@ssw0rd!2024":
     score += 1
 
-st.subheader("Question 3")
+st.markdown("**Question 3:** What information should you never share online?")
 q3 = st.radio(
-    "What information should you never share online?",
-    ["Your favorite color", "OTP / Bank details", "Your nickname"]
+    "",
+    ["Your favorite color", "OTP / Bank details", "Your nickname"],
+    key="q3"
 )
 if q3 == "OTP / Bank details":
     score += 1
@@ -32,10 +45,3 @@ if q3 == "OTP / Bank details":
 if st.button("Submit Quiz"):
     st.success(f"Your Score: {score} / 3")
 
-    if score == 3:
-        st.balloons()
-        st.write("🎉 Excellent! You are cyber aware.")
-    elif score == 2:
-        st.write("👍 Good job! Stay alert online.")
-    else:
-        st.write("⚠️ You need to improve your cyber awareness.")
