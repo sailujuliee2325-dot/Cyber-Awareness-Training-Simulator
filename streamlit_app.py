@@ -3,6 +3,7 @@ import pandas as pd
 import random
 import plotly.express as px
 from st_aggrid import AgGrid
+import streamlit.components.v1 as components
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="Cyber Awareness Simulator", layout="wide")
@@ -64,8 +65,8 @@ quiz_questions = [
 ]
 
 phishing_examples = [
-    {"type": "Email", "content": "Your account will be suspended! Click here to verify.", "correct_action": "Report as phishing", "explanation": "Legitimate companies never ask for verification like this in email."},
-    {"type": "Website", "content": "http://secure-paypal.com-login.xyz", "correct_action": "Do not enter credentials", "explanation": "The domain is fake; always check URL carefully."},
+    {"type": "Email", "content": "Your account will be suspended! Click here to verify.", "correct_action": "Ignore and report", "explanation": "Legitimate companies never ask for verification like this in email."},
+    {"type": "Website", "content": "http://secure-paypal.com-login.xyz", "correct_action": "Ignore and report", "explanation": "The domain is fake; always check URL carefully."},
     {"type": "Message", "content": "Congrats! You won a prize. Send your card details to claim.", "correct_action": "Ignore and report", "explanation": "This is a classic phishing scam trying to steal personal info."}
 ]
 
@@ -81,7 +82,7 @@ cyber_tips = [
 if st.session_state.page == "home":
     st.markdown('<div class="main-title">Cyber Awareness Simulator</div>', unsafe_allow_html=True)
     
-    # Robot GIF animation (replace URL with any GIF you like)
+    # Robot GIF animation (replace with any GIF you like)
     st.image("https://media.giphy.com/media/3oKIPwoeGErMmaI43C/giphy.gif", width=300)
     
     # Navigation buttons
@@ -90,13 +91,11 @@ if st.session_state.page == "home":
     if col2.button("Phishing Simulator"): st.session_state.page = "phishing"
     if col3.button("Cyber Tips"): st.session_state.page = "tips"
     if col4.button("Dashboard"): st.session_state.page = "dashboard"
-    
-    st.experimental_rerun()
 
 # ---------- QUIZ PAGE ----------
 elif st.session_state.page == "quiz":
     st.title("📝 Cyber Awareness Quiz")
-    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
+    if st.button("⬅ Back to Home"): st.session_state.page="home"
     
     if st.session_state.quiz_index < len(quiz_questions):
         q = quiz_questions[st.session_state.quiz_index]
@@ -107,25 +106,26 @@ elif st.session_state.page == "quiz":
                 if opt == q["answer"]:
                     st.session_state.quiz_score += 1
                     st.success("✅ Correct!")
+                    # Confetti effect
                     components.html("""<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
                     <script>confetti({ particleCount: 100, spread: 70 });</script>""")
                 else:
                     st.error(f"❌ Incorrect! Correct: {q['answer']}")
+                
+                # Move to next question
                 st.session_state.quiz_index += 1
-                st.experimental_rerun()
-        st.progress((st.session_state.quiz_index)/len(quiz_questions))
+
     else:
         st.balloons()
         st.success(f"Quiz Completed! Score: {st.session_state.quiz_score}/{len(quiz_questions)}")
         if st.button("Restart Quiz"):
             st.session_state.quiz_index = 0
             st.session_state.quiz_score = 0
-            st.experimental_rerun()
 
 # ---------- PHISHING SIMULATOR ----------
 elif st.session_state.page == "phishing":
     st.title("🎣 Phishing Simulator")
-    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
+    if st.button("⬅ Back to Home"): st.session_state.page="home"
     example = random.choice(phishing_examples)
     st.markdown(f"<div class='card'><b>Type:</b> {example['type']}<br><b>Content:</b><br>{example['content']}</div>", unsafe_allow_html=True)
     action = st.radio("What would you do?", ["Ignore and report", "Click/Submit info", "Forward to friend"], index=0)
@@ -137,19 +137,18 @@ elif st.session_state.page == "phishing":
         else:
             st.error(f"❌ Incorrect! {example['explanation']}")
         st.session_state.phishing_attempts.append({"content": example["content"], "action": action, "correct": correct})
-        st.experimental_rerun()
 
 # ---------- CYBER TIPS ----------
 elif st.session_state.page == "tips":
     st.title("💡 Cybersecurity Tips")
-    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
+    if st.button("⬅ Back to Home"): st.session_state.page="home"
     for tip in cyber_tips:
         st.markdown(f"<div class='card'>{tip['tip']}</div>", unsafe_allow_html=True)
 
 # ---------- DASHBOARD ----------
 elif st.session_state.page == "dashboard":
     st.title("📊 Performance Dashboard")
-    if st.button("⬅ Back to Home"): st.session_state.page="home"; st.experimental_rerun()
+    if st.button("⬅ Back to Home"): st.session_state.page="home"
     st.metric("Quiz Score", f"{st.session_state.quiz_score}/{len(quiz_questions)}")
     st.metric("Phishing Score", f"{st.session_state.phishing_score}/{len(st.session_state.phishing_attempts)}")
     
