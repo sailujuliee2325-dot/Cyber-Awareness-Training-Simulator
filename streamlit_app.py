@@ -17,7 +17,7 @@ menu = st.sidebar.selectbox(
     ]
 )
 
-# ---------------- PASSWORD CHECKER ----------------
+#PASSWORD CHECKER
 if menu == "Strong Password Checker":
     st.header("🔐 Strong Password Checker")
     password = st.text_input("Enter Password", type="password")
@@ -43,7 +43,7 @@ if menu == "Strong Password Checker":
         st.info("Suggested Strong Password:")
         st.code("".join(random.sample("Aa1@Bb2#Cc3$Dd4%", 10)))
 
-# ---------------- EMAIL DETECTION ----------------
+#EMAIL DETECTION
 elif menu == "Phishing Email Detection":
     st.header("📧 Phishing Email Detection")
     email_text = st.text_area("Paste Email Content")
@@ -56,7 +56,7 @@ elif menu == "Phishing Email Detection":
         else:
             st.success("✅ Safe Email")
 
-# ---------------- MESSAGE DETECTION ----------------
+#MESSAGE DETECTION
 elif menu == "Scam Message Detection":
     st.header("📱 Scam Message Detection")
     message = st.text_area("Paste SMS / WhatsApp Message")
@@ -69,7 +69,7 @@ elif menu == "Scam Message Detection":
         else:
             st.success("✅ Message Seems Safe")
 
-# ---------------- ATTACK SIMULATION ----------------
+#ATTACK SIMULATION
 elif menu == "Cyber Attack Simulation":
     st.header("💻 Cyber Attack Simulator")
 
@@ -86,7 +86,7 @@ elif menu == "Cyber Attack Simulation":
         elif attack == "Malware Download":
             st.warning("User clicked unknown file. System infected.")
 
-# ---------------- PROTECTIVE MEASURES ----------------
+#PROTECTIVE MEASURES
 elif menu == "Protective Measures":
     st.header("🧠 Cyber Safety Tips")
 
