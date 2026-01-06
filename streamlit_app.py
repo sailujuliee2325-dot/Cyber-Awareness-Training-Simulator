@@ -1,144 +1,156 @@
 import streamlit as st
-import time
+import plotly.graph_objects as go
 import random
-import numpy as np
+import re
 
-# ------------------ PAGE CONFIG ------------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="AI Cyber Dashboard",
-    page_icon="🛡️",
-    layout="wide"
+    page_title="Cyber Awareness Simulator",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ------------------ CUSTOM CSS ------------------
-st.markdown("""
-<style>
-body {
-    background: linear-gradient(120deg,#0f2027,#203a43,#2c5364);
-}
-.title {
-    font-size: 48px;
-    font-weight: bold;
-    color: white;
-    text-align: center;
-}
-.card {
-    background: rgba(255,255,255,0.08);
-    padding: 30px;
-    border-radius: 20px;
-    color: white;
-    box-shadow: 0px 0px 20px rgba(0,255,255,0.2);
-    transition: 0.3s;
-}
-.card:hover {
-    transform: scale(1.03);
-}
-.status-safe {
-    color: #00ff9d;
-    font-size: 28px;
-}
-.status-risk {
-    color: #ff4b4b;
-    font-size: 28px;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- SESSION STATE ----------------
+if "page" not in st.session_state:
+    st.session_state.page = "persona"
+    st.session_state.quiz_score = 0
+    st.session_state.phishing_score = 0
+    st.session_state.hesitation = 0
+    st.session_state.persona = ""
+    st.session_state.persona_risk = 0
+    st.session_state.missed_flags = 0
 
-# ------------------ LOGIN SYSTEM ------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+# ---------------- AI PERSONA ENGINE ----------------
+def ai_persona_engine(role, experience, pressure):
+    risk = 0
+    risk += 30 if role == "Employee" else 15 if role == "Manager" else 5
+    risk += 30 if experience == "Beginner" else 15 if experience == "Intermediate" else 5
+    risk += 30 if pressure == "High" else 15 if pressure == "Medium" else 5
 
-def login():
-    st.markdown("<h1 class='title'>🔐 Secure Login</h1>", unsafe_allow_html=True)
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
+    persona = "High-Risk Persona" if risk >= 70 else "Medium-Risk Persona" if risk >= 40 else "Low-Risk Persona"
+    return risk, persona
 
-    if st.button("Login"):
-        if user == "admin" and pwd == "admin123":
-            st.session_state.logged_in = True
-            st.experimental_rerun()
+# ---------------- AI MESSAGE DETECTION ----------------
+def ai_message_detector(text):
+    patterns = ["urgent", "verify", "click", "otp", "password", "account blocked", "limited time"]
+    score = sum(1 for p in patterns if p in text.lower())
+    return score >= 2, patterns
+
+# ---------------- AI SENSITIVE DATA DETECTION ----------------
+def ai_sensitive_data_detector(text):
+    bank = bool(re.search(r"\b\d{12,16}\b", text))
+    otp = bool(re.search(r"\b\d{4,6}\b", text))
+    personal = any(k in text.lower() for k in ["aadhaar", "pan", "address", "phone", "email"])
+    return bank, otp, personal
+
+# ---------------- AI AD SCAM DETECTION ----------------
+def ai_ad_detector(ad_text):
+    scam_words = ["free", "win", "bonus", "click now", "limited offer", "guaranteed"]
+    score = sum(1 for w in scam_words if w in ad_text.lower())
+    return score >= 2
+
+# ---------------- AI RISK ENGINE ----------------
+def ai_risk_engine(quiz, phishing, persona_risk, missed_flags):
+    risk = (persona_risk * 0.4) + ((100 - quiz) * 0.25) + ((100 - phishing) * 0.25) + (missed_flags * 5)
+    level = "High" if risk >= 70 else "Medium" if risk >= 40 else "Low"
+    return int(risk), level
+
+# ---------------- GAUGE ----------------
+def gauge(score):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=score,
+        gauge={
+            "axis": {"range": [0, 1000]},
+            "bar": {"color": "#4CC9F0"},
+            "steps": [
+                {"range": [0, 400], "color": "#8B0000"},
+                {"range": [400, 700], "color": "#FF8C00"},
+                {"range": [700, 1000], "color": "#006400"},
+            ],
+        },
+    ))
+    fig.update_layout(height=350)
+    return fig
+
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("🛡 Cyber Simulator")
+st.sidebar.success("🤖 AI Protection Engine Active")
+
+# ---------------- PERSONA PAGE ----------------
+if st.session_state.page == "persona":
+    st.title("👤 AI Persona Profiling")
+
+    role = st.selectbox("Role", ["Employee", "Manager", "Administrator"])
+    experience = st.selectbox("Cyber Awareness Level", ["Beginner", "Intermediate", "Advanced"])
+    pressure = st.selectbox("Work Pressure Level", ["Low", "Medium", "High"])
+
+    if st.button("Next → Start Quiz"):
+        risk, persona = ai_persona_engine(role, experience, pressure)
+        st.session_state.persona_risk = risk
+        st.session_state.persona = persona
+        st.session_state.page = "ai_protection"
+        st.rerun()
+
+# ---------------- AI PROTECTION SIMULATOR ----------------
+elif st.session_state.page == "ai_protection":
+    st.title("🤖 AI Protection Simulator")
+
+    st.subheader("1️⃣ AI Message Detection")
+    msg = st.text_area("Paste a message or email:")
+    if msg:
+        detected, patterns = ai_message_detector(msg)
+        if detected:
+            st.error("⚠️ AI detected a suspicious message (phishing indicators found)")
         else:
-            st.error("❌ Invalid Credentials")
+            st.success("✅ Message appears safe")
 
-if not st.session_state.logged_in:
-    login()
-    st.stop()
+    st.subheader("2️⃣ AI Sensitive Data Detection")
+    data = st.text_area("Enter data you want to share:")
+    bank, otp, personal = ai_sensitive_data_detector(data)
+    if bank:
+        st.error("🚨 Bank card details detected")
+    if otp:
+        st.error("🚨 OTP detected – never share OTP")
+    if personal:
+        st.warning("⚠️ Personal data detected")
 
-# ------------------ AI LOGIC ------------------
-def ai_awareness_score():
-    return random.randint(60, 95)
+    st.subheader("3️⃣ AI Ad / Scam Detection")
+    ad = st.text_input("Paste an advertisement text:")
+    if ad:
+        if ai_ad_detector(ad):
+            st.error("🚫 Scam / deceptive advertisement blocked by AI")
+        else:
+            st.success("✅ Advertisement appears safe")
 
-def ai_threat_level(score):
-    if score > 85:
-        return "LOW"
-    elif score > 70:
-        return "MEDIUM"
-    else:
-        return "HIGH"
+    if st.button("Next → Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
 
-# ------------------ DASHBOARD ------------------
-st.markdown("<h1 class='title'>🛡️ AI Cyber Dashboard</h1>", unsafe_allow_html=True)
-st.markdown("<br>", unsafe_allow_html=True)
+# ---------------- DASHBOARD ----------------
+elif st.session_state.page == "dashboard":
+    st.title("📊 Cyber Security Operations Dashboard")
 
-score = ai_awareness_score()
-threat = ai_threat_level(score)
+    risk, threat = ai_risk_engine(
+        st.session_state.quiz_score,
+        st.session_state.phishing_score,
+        st.session_state.persona_risk,
+        st.session_state.missed_flags
+    )
 
-col1, col2, col3 = st.columns(3)
+    security_score = max(0, 1000 - risk * 7)
 
-with col1:
-    st.markdown(f"""
-    <div class="card">
-        <h3>🤖 AI Awareness Score</h3>
-        <h1>{score} / 100</h1>
-    </div>
-    """, unsafe_allow_html=True)
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.plotly_chart(gauge(security_score), use_container_width=True)
 
-with col2:
-    st.markdown(f"""
-    <div class="card">
-        <h3>⚠️ Threat Level</h3>
-        <h1>{threat}</h1>
-    </div>
-    """, unsafe_allow_html=True)
+    with col2:
+        st.metric("Threat Level", threat)
+        st.metric("Persona", st.session_state.persona)
+        st.metric("AI Protection Status", "Active")
 
-with col3:
-    status = "Protected ✅" if threat == "LOW" else "At Risk ❌"
-    color = "status-safe" if threat == "LOW" else "status-risk"
+    st.success("✅ AI continuously monitoring messages, data sharing, and ads")
 
-    st.markdown(f"""
-    <div class="card">
-        <h3>🔒 Security Status</h3>
-        <h2 class="{color}">{status}</h2>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ------------------ REAL-TIME AI SIMULATION ------------------
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.subheader("📡 Real-Time AI Threat Simulation")
-
-progress = st.progress(0)
-status_text = st.empty()
-
-for i in range(100):
-    progress.progress(i + 1)
-    status_text.text(f"AI Scanning Network Packets... {i+1}%")
-    time.sleep(0.03)
-
-st.success("✅ AI Scan Completed – No Active Attacks Detected")
-
-# ------------------ USER ACTION AI ------------------
-st.markdown("<br>", unsafe_allow_html=True)
-st.subheader("🧠 AI Recommendations")
-
-if score > 85:
-    st.info("✔ Excellent cyber hygiene detected. Keep systems updated.")
-elif score > 70:
-    st.warning("⚠ Enable 2FA and improve password strength.")
-else:
-    st.error("❌ High risk detected. Immediate training required.")
-
-# ------------------ LOGOUT ------------------
-st.markdown("<br><br>", unsafe_allow_html=True)
-if st.button("Logout"):
-    st.session_state.logged_in = False
-    st.experimental_rerun()
+    if st.button("Restart Simulation"):
+        st.session_state.clear()
+        st.rerun()
