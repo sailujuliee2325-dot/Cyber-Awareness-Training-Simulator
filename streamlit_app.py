@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 import random
+import re
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -26,50 +27,33 @@ def ai_persona_engine(role, experience, pressure):
     risk += 30 if experience == "Beginner" else 15 if experience == "Intermediate" else 5
     risk += 30 if pressure == "High" else 15 if pressure == "Medium" else 5
 
-    persona = (
-        "High-Risk Persona" if risk >= 70 else
-        "Medium-Risk Persona" if risk >= 40 else
-        "Low-Risk Persona"
-    )
+    persona = "High-Risk Persona" if risk >= 70 else "Medium-Risk Persona" if risk >= 40 else "Low-Risk Persona"
     return risk, persona
 
-# ---------------- AI PHISHING GENERATOR ----------------
-def generate_phishing_email(role, pressure):
-    emails = [
-        {
-            "subject": "Urgent: Payroll Update Required",
-            "body": "Your salary bonus is pending. Login within 30 minutes to avoid cancellation.",
-            "flags": ["Urgency", "Suspicious Link", "Unexpected Bonus"]
-        },
-        {
-            "subject": "Security Alert: Account Compromised",
-            "body": "We detected unusual activity. Verify your identity immediately.",
-            "flags": ["Fear Tactic", "Generic Greeting", "Link Mismatch"]
-        },
-        {
-            "subject": "HR Notice: Policy Acknowledgement",
-            "body": "New company policy attached. Download and sign.",
-            "flags": ["Unexpected Attachment", "No Internal Signature"]
-        }
-    ]
-    return random.choice(emails)
+# ---------------- AI MESSAGE DETECTION ----------------
+def ai_message_detector(text):
+    patterns = ["urgent", "verify", "click", "otp", "password", "account blocked", "limited time"]
+    score = sum(1 for p in patterns if p in text.lower())
+    return score >= 2, patterns
+
+# ---------------- AI SENSITIVE DATA DETECTION ----------------
+def ai_sensitive_data_detector(text):
+    bank = bool(re.search(r"\b\d{12,16}\b", text))
+    otp = bool(re.search(r"\b\d{4,6}\b", text))
+    personal = any(k in text.lower() for k in ["aadhaar", "pan", "address", "phone", "email"])
+    return bank, otp, personal
+
+# ---------------- AI AD SCAM DETECTION ----------------
+def ai_ad_detector(ad_text):
+    scam_words = ["free", "win", "bonus", "click now", "limited offer", "guaranteed"]
+    score = sum(1 for w in scam_words if w in ad_text.lower())
+    return score >= 2
 
 # ---------------- AI RISK ENGINE ----------------
 def ai_risk_engine(quiz, phishing, persona_risk, missed_flags):
     risk = (persona_risk * 0.4) + ((100 - quiz) * 0.25) + ((100 - phishing) * 0.25) + (missed_flags * 5)
     level = "High" if risk >= 70 else "Medium" if risk >= 40 else "Low"
     return int(risk), level
-
-# ---------------- AI RECOMMENDATIONS ----------------
-def ai_recommendations(persona, missed):
-    tips = []
-    if persona == "High-Risk Persona":
-        tips.append("Mandatory phishing awareness training recommended.")
-    if missed > 1:
-        tips.append("Improve identification of urgency and emotional manipulation.")
-    tips.append("Always verify sender domains and avoid clicking embedded links.")
-    tips.append("Enable MFA and report suspicious emails immediately.")
-    return tips
 
 # ---------------- GAUGE ----------------
 def gauge(score):
@@ -91,7 +75,7 @@ def gauge(score):
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("🛡 Cyber Simulator")
-st.sidebar.success("AI Engine Active")
+st.sidebar.success("🤖 AI Protection Engine Active")
 
 # ---------------- PERSONA PAGE ----------------
 if st.session_state.page == "persona":
@@ -105,62 +89,41 @@ if st.session_state.page == "persona":
         risk, persona = ai_persona_engine(role, experience, pressure)
         st.session_state.persona_risk = risk
         st.session_state.persona = persona
-        st.session_state.page = "quiz"
+        st.session_state.page = "ai_protection"
         st.rerun()
 
-# ---------------- QUIZ PAGE ----------------
-elif st.session_state.page == "quiz":
-    st.title("🧠 Security Awareness Quiz")
+# ---------------- AI PROTECTION SIMULATOR ----------------
+elif st.session_state.page == "ai_protection":
+    st.title("🤖 AI Protection Simulator")
 
-    answer = st.radio(
-        "You receive an urgent password reset email. What do you do?",
-        [
-            "Click the link immediately",
-            "Ignore it",
-            "Verify sender and report phishing"
-        ]
-    )
-
-    if st.button("Submit Answer"):
-        if answer == "Verify sender and report phishing":
-            st.session_state.quiz_score = 90
+    st.subheader("1️⃣ AI Message Detection")
+    msg = st.text_area("Paste a message or email:")
+    if msg:
+        detected, patterns = ai_message_detector(msg)
+        if detected:
+            st.error("⚠️ AI detected a suspicious message (phishing indicators found)")
         else:
-            st.session_state.quiz_score = 40
-            st.session_state.hesitation += 1
+            st.success("✅ Message appears safe")
 
-        st.session_state.page = "phishing"
-        st.rerun()
+    st.subheader("2️⃣ AI Sensitive Data Detection")
+    data = st.text_area("Enter data you want to share:")
+    bank, otp, personal = ai_sensitive_data_detector(data)
+    if bank:
+        st.error("🚨 Bank card details detected")
+    if otp:
+        st.error("🚨 OTP detected – never share OTP")
+    if personal:
+        st.warning("⚠️ Personal data detected")
 
-# ---------------- PHISHING SIMULATION ----------------
-elif st.session_state.page == "phishing":
-    st.title("🎣 AI Phishing Simulation")
-
-    email = generate_phishing_email("", "")
-    st.subheader(email["subject"])
-    st.info(email["body"])
-
-    st.markdown("### 🔍 Identify phishing red flags")
-    selected_flags = st.multiselect(
-        "Select all that apply:",
-        ["Urgency", "Suspicious Link", "Unexpected Bonus",
-         "Fear Tactic", "Generic Greeting", "Link Mismatch",
-         "Unexpected Attachment", "No Internal Signature"]
-    )
-
-    if st.button("Analyze Email"):
-        correct = set(email["flags"])
-        chosen = set(selected_flags)
-
-        missed = len(correct - chosen)
-        st.session_state.missed_flags = missed
-
-        if missed == 0:
-            st.session_state.phishing_score = 95
-            st.success("Excellent! All red flags identified.")
+    st.subheader("3️⃣ AI Ad / Scam Detection")
+    ad = st.text_input("Paste an advertisement text:")
+    if ad:
+        if ai_ad_detector(ad):
+            st.error("🚫 Scam / deceptive advertisement blocked by AI")
         else:
-            st.session_state.phishing_score = max(40, 95 - missed * 15)
-            st.warning(f"You missed {missed} red flags.")
+            st.success("✅ Advertisement appears safe")
 
+    if st.button("Next → Dashboard"):
         st.session_state.page = "dashboard"
         st.rerun()
 
@@ -178,18 +141,15 @@ elif st.session_state.page == "dashboard":
     security_score = max(0, 1000 - risk * 7)
 
     col1, col2 = st.columns([2, 1])
-
     with col1:
         st.plotly_chart(gauge(security_score), use_container_width=True)
 
     with col2:
         st.metric("Threat Level", threat)
         st.metric("Persona", st.session_state.persona)
-        st.metric("Missed Red Flags", st.session_state.missed_flags)
+        st.metric("AI Protection Status", "Active")
 
-    st.markdown("## 🤖 AI Recommendations")
-    for tip in ai_recommendations(st.session_state.persona, st.session_state.missed_flags):
-        st.info(tip)
+    st.success("✅ AI continuously monitoring messages, data sharing, and ads")
 
     if st.button("Restart Simulation"):
         st.session_state.clear()
