@@ -1,156 +1,104 @@
 import streamlit as st
-import plotly.graph_objects as go
-import random
 import re
+import random
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Cyber Awareness Simulator",
-    layout="wide",
-    initial_sidebar_state="expanded"
+st.set_page_config(page_title="Cyber Awareness Simulator", layout="centered")
+
+st.title("🛡️ Cyber Awareness Simulator (AI Assisted)")
+
+menu = st.sidebar.selectbox(
+    "Select Awareness Module",
+    [
+        "Strong Password Checker",
+        "Phishing Email Detection",
+        "Scam Message Detection",
+        "Cyber Attack Simulation",
+        "Protective Measures"
+    ]
 )
 
-# ---------------- SESSION STATE ----------------
-if "page" not in st.session_state:
-    st.session_state.page = "persona"
-    st.session_state.quiz_score = 0
-    st.session_state.phishing_score = 0
-    st.session_state.hesitation = 0
-    st.session_state.persona = ""
-    st.session_state.persona_risk = 0
-    st.session_state.missed_flags = 0
+# ---------------- PASSWORD CHECKER ----------------
+if menu == "Strong Password Checker":
+    st.header("🔐 Strong Password Checker")
+    password = st.text_input("Enter Password", type="password")
 
-# ---------------- AI PERSONA ENGINE ----------------
-def ai_persona_engine(role, experience, pressure):
-    risk = 0
-    risk += 30 if role == "Employee" else 15 if role == "Manager" else 5
-    risk += 30 if experience == "Beginner" else 15 if experience == "Intermediate" else 5
-    risk += 30 if pressure == "High" else 15 if pressure == "Medium" else 5
+    def check_password_strength(pw):
+        score = 0
+        if len(pw) >= 8: score += 1
+        if re.search(r"[A-Z]", pw): score += 1
+        if re.search(r"[a-z]", pw): score += 1
+        if re.search(r"[0-9]", pw): score += 1
+        if re.search(r"[@$!%*?&]", pw): score += 1
+        return score
 
-    persona = "High-Risk Persona" if risk >= 70 else "Medium-Risk Persona" if risk >= 40 else "Low-Risk Persona"
-    return risk, persona
-
-# ---------------- AI MESSAGE DETECTION ----------------
-def ai_message_detector(text):
-    patterns = ["urgent", "verify", "click", "otp", "password", "account blocked", "limited time"]
-    score = sum(1 for p in patterns if p in text.lower())
-    return score >= 2, patterns
-
-# ---------------- AI SENSITIVE DATA DETECTION ----------------
-def ai_sensitive_data_detector(text):
-    bank = bool(re.search(r"\b\d{12,16}\b", text))
-    otp = bool(re.search(r"\b\d{4,6}\b", text))
-    personal = any(k in text.lower() for k in ["aadhaar", "pan", "address", "phone", "email"])
-    return bank, otp, personal
-
-# ---------------- AI AD SCAM DETECTION ----------------
-def ai_ad_detector(ad_text):
-    scam_words = ["free", "win", "bonus", "click now", "limited offer", "guaranteed"]
-    score = sum(1 for w in scam_words if w in ad_text.lower())
-    return score >= 2
-
-# ---------------- AI RISK ENGINE ----------------
-def ai_risk_engine(quiz, phishing, persona_risk, missed_flags):
-    risk = (persona_risk * 0.4) + ((100 - quiz) * 0.25) + ((100 - phishing) * 0.25) + (missed_flags * 5)
-    level = "High" if risk >= 70 else "Medium" if risk >= 40 else "Low"
-    return int(risk), level
-
-# ---------------- GAUGE ----------------
-def gauge(score):
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=score,
-        gauge={
-            "axis": {"range": [0, 1000]},
-            "bar": {"color": "#4CC9F0"},
-            "steps": [
-                {"range": [0, 400], "color": "#8B0000"},
-                {"range": [400, 700], "color": "#FF8C00"},
-                {"range": [700, 1000], "color": "#006400"},
-            ],
-        },
-    ))
-    fig.update_layout(height=350)
-    return fig
-
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("🛡 Cyber Simulator")
-st.sidebar.success("🤖 AI Protection Engine Active")
-
-# ---------------- PERSONA PAGE ----------------
-if st.session_state.page == "persona":
-    st.title("👤 AI Persona Profiling")
-
-    role = st.selectbox("Role", ["Employee", "Manager", "Administrator"])
-    experience = st.selectbox("Cyber Awareness Level", ["Beginner", "Intermediate", "Advanced"])
-    pressure = st.selectbox("Work Pressure Level", ["Low", "Medium", "High"])
-
-    if st.button("Next → Start Quiz"):
-        risk, persona = ai_persona_engine(role, experience, pressure)
-        st.session_state.persona_risk = risk
-        st.session_state.persona = persona
-        st.session_state.page = "ai_protection"
-        st.rerun()
-
-# ---------------- AI PROTECTION SIMULATOR ----------------
-elif st.session_state.page == "ai_protection":
-    st.title("🤖 AI Protection Simulator")
-
-    st.subheader("1️⃣ AI Message Detection")
-    msg = st.text_area("Paste a message or email:")
-    if msg:
-        detected, patterns = ai_message_detector(msg)
-        if detected:
-            st.error("⚠️ AI detected a suspicious message (phishing indicators found)")
+    if password:
+        strength = check_password_strength(password)
+        if strength <= 2:
+            st.error("Weak Password ❌")
+        elif strength == 3:
+            st.warning("Moderate Password ⚠️")
         else:
-            st.success("✅ Message appears safe")
+            st.success("Strong Password ✅")
 
-    st.subheader("2️⃣ AI Sensitive Data Detection")
-    data = st.text_area("Enter data you want to share:")
-    bank, otp, personal = ai_sensitive_data_detector(data)
-    if bank:
-        st.error("🚨 Bank card details detected")
-    if otp:
-        st.error("🚨 OTP detected – never share OTP")
-    if personal:
-        st.warning("⚠️ Personal data detected")
+        st.info("Suggested Strong Password:")
+        st.code("".join(random.sample("Aa1@Bb2#Cc3$Dd4%", 10)))
 
-    st.subheader("3️⃣ AI Ad / Scam Detection")
-    ad = st.text_input("Paste an advertisement text:")
-    if ad:
-        if ai_ad_detector(ad):
-            st.error("🚫 Scam / deceptive advertisement blocked by AI")
+# ---------------- EMAIL DETECTION ----------------
+elif menu == "Phishing Email Detection":
+    st.header("📧 Phishing Email Detection")
+    email_text = st.text_area("Paste Email Content")
+
+    phishing_keywords = ["urgent", "verify", "click here", "account suspended", "login now"]
+
+    if email_text:
+        if any(word in email_text.lower() for word in phishing_keywords):
+            st.error("⚠️ Phishing Email Detected")
         else:
-            st.success("✅ Advertisement appears safe")
+            st.success("✅ Safe Email")
 
-    if st.button("Next → Dashboard"):
-        st.session_state.page = "dashboard"
-        st.rerun()
+# ---------------- MESSAGE DETECTION ----------------
+elif menu == "Scam Message Detection":
+    st.header("📱 Scam Message Detection")
+    message = st.text_area("Paste SMS / WhatsApp Message")
 
-# ---------------- DASHBOARD ----------------
-elif st.session_state.page == "dashboard":
-    st.title("📊 Cyber Security Operations Dashboard")
+    scam_keywords = ["won", "lottery", "free", "claim now", "limited offer", "click link"]
 
-    risk, threat = ai_risk_engine(
-        st.session_state.quiz_score,
-        st.session_state.phishing_score,
-        st.session_state.persona_risk,
-        st.session_state.missed_flags
+    if message:
+        if any(word in message.lower() for word in scam_keywords):
+            st.error("⚠️ Scam Message Detected")
+        else:
+            st.success("✅ Message Seems Safe")
+
+# ---------------- ATTACK SIMULATION ----------------
+elif menu == "Cyber Attack Simulation":
+    st.header("💻 Cyber Attack Simulator")
+
+    attack = st.selectbox(
+        "Choose Attack Type",
+        ["Phishing Attack", "Brute Force Attack", "Malware Download"]
     )
 
-    security_score = max(0, 1000 - risk * 7)
+    if st.button("Simulate Attack"):
+        if attack == "Phishing Attack":
+            st.warning("Fake Email Sent: 'Your bank account is blocked. Click here.'")
+        elif attack == "Brute Force Attack":
+            st.warning("Multiple login attempts detected from unknown IP.")
+        elif attack == "Malware Download":
+            st.warning("User clicked unknown file. System infected.")
 
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.plotly_chart(gauge(security_score), use_container_width=True)
+# ---------------- PROTECTIVE MEASURES ----------------
+elif menu == "Protective Measures":
+    st.header("🧠 Cyber Safety Tips")
 
-    with col2:
-        st.metric("Threat Level", threat)
-        st.metric("Persona", st.session_state.persona)
-        st.metric("AI Protection Status", "Active")
+    tips = [
+        "Use strong and unique passwords",
+        "Do not click unknown links",
+        "Verify sender email address",
+        "Enable Two-Factor Authentication",
+        "Install antivirus software",
+        "Keep software updated",
+        "Never share OTP or passwords"
+    ]
 
-    st.success("✅ AI continuously monitoring messages, data sharing, and ads")
-
-    if st.button("Restart Simulation"):
-        st.session_state.clear()
-        st.rerun()
+    for tip in tips:
+        st.success("✔️ " + tip)
